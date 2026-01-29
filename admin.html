@@ -2,42 +2,164 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ADMIN CONTROL PANEL</title>
-  <link rel="shortcut icon" href="favicon.png" type="image/x-icon">
-   
+    <link rel="shortcut icon" href="favicon.png" type="image/x-icon">
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
     <style>
-        :root { --blue: #38bdf8; --bg: #0e121a; }
-        body{background:var(--bg);color:#fff;font-family:sans-serif;padding:20px;display:flex;justify-content:center}
-        .card{background:#1e293b;padding:25px;border-radius:20px;width:100%;max-width:400px;border:1px solid var(--blue)}
-        .selector{position:relative;margin-bottom:12px}
-        .selector button{width:100%;padding:14px;background:#0e121a;border:1px solid #334155;color:#fff;border-radius:10px;text-align:left;cursor:pointer;font-weight:bold}
-        .options-list{display:none;position:absolute;width:100%;background:#1e293b;border:1px solid var(--blue);border-radius:10px;z-index:100;max-height:250px;overflow-y:auto}
-        .options-list div{padding:12px;border-bottom:1px solid #334155;cursor:pointer}
-        .btn{width:100%;padding:14px;border:none;border-radius:10px;font-weight:bold;margin:8px 0;cursor:pointer}
-        #toast{visibility:hidden; min-width:250px; background-color:var(--blue); color:#000; text-align:center; border-radius:10px; padding:16px; position:fixed; z-index:1000; bottom:30px; font-weight:bold}
-        #toast.show{visibility:visible; animation:fadein 0.5s, fadeout 0.5s 2.5s}
-        @keyframes fadein{from{bottom:0;opacity:0} to{bottom:30px;opacity:1}}
-        @keyframes fadeout{from{bottom:30px;opacity:1} to{bottom:0;opacity:0}}
+        :root { --blue: #38bdf8; --bg: #0e121a; --dark-card: #1e293b; }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            background: var(--bg);
+            color: #fff;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .card {
+            background: var(--dark-card);
+            padding: 20px;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 420px;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        h2 { text-align: center; color: var(--blue); margin-bottom: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+
+        .status-box {
+            background: #0e121a;
+            padding: 15px;
+            border-radius: 18px;
+            margin-bottom: 20px;
+            text-align: center;
+            border: 1px solid #334155;
+        }
+
+        .selector { position: relative; margin-bottom: 12px; }
+        
+        .selector button {
+            width: 100%;
+            padding: 16px;
+            background: #0e121a;
+            border: 1px solid #334155;
+            color: #fff;
+            border-radius: 14px;
+            text-align: left;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Arrow icon for dropdown */
+        .selector button::after { content: '▼'; font-size: 10px; color: var(--blue); }
+
+        .options-list {
+            display: none;
+            position: absolute;
+            width: 100%;
+            background: #1e293b;
+            border: 2px solid var(--blue);
+            border-radius: 14px;
+            z-index: 100;
+            max-height: 250px;
+            overflow-y: auto;
+            margin-top: 5px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        /* Styling Scrollbar for PC */
+        .options-list::-webkit-scrollbar { width: 6px; }
+        .options-list::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 10px; }
+
+        .options-list div {
+            padding: 14px;
+            border-bottom: 1px solid #334155;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .options-list div:hover { background: var(--blue); color: #000; font-weight: bold; }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 14px;
+            font-weight: 800;
+            margin: 6px 0;
+            cursor: pointer;
+            font-size: 14px;
+            transition: transform 0.1s;
+            text-transform: uppercase;
+        }
+
+        .btn:active { transform: scale(0.96); }
+
+        #toast {
+            visibility: hidden;
+            min-width: 280px;
+            background-color: var(--blue);
+            color: #000;
+            text-align: center;
+            border-radius: 50px;
+            padding: 14px;
+            position: fixed;
+            z-index: 1000;
+            bottom: 40px;
+            font-weight: 900;
+            box-shadow: 0 10px 20px rgba(56, 189, 248, 0.4);
+        }
+
+        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+
+        @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 40px; opacity: 1; } }
+        @keyframes fadeout { from { bottom: 40px; opacity: 1; } to { bottom: 0; opacity: 0; } }
     </style>
 </head>
 <body>
-<div id="toast">Manual Signal Sent!</div>
+
+<div id="toast">✅ MANUAL SIGNAL SENT!</div>
+
 <div class="card">
-    <h2 style="text-align:center;color:var(--blue)">ADMIN CONTROL</h2>
-    <div style="background:#0e121a;padding:15px;border-radius:15px;margin-bottom:20px;text-align:center;border:1px solid #334155">
-        <div id="status" style="margin-bottom:10px;font-weight:bold;color:var(--blue)">Auto Mode: LOADING...</div>
-        <button class="btn" style="background:#22c55e;color:white" onclick="setAuto(true)">START AUTO</button>
-        <button class="btn" style="background:#ef4444;color:white" onclick="setAuto(false)">STOP AUTO</button>
+    <h2>ADMIN PANEL</h2>
+    
+    <div class="status-box">
+        <div id="status" style="margin-bottom:12px; font-weight:bold; color:var(--blue); font-size:14px;">AUTO MODE: LOADING...</div>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn" style="background:#22c55e; color:white; flex:1;" onclick="setAuto(true)">START</button>
+            <button class="btn" style="background:#ef4444; color:white; flex:1;" onclick="setAuto(false)">STOP</button>
+        </div>
     </div>
-    <div class="selector"><button id="pBtn">Target Pair</button><div class="options-list" id="pOpt"></div></div>
-    <div class="selector"><button id="tBtn">Target Time</button><div class="options-list" id="tOpt"></div></div>
-    <button class="btn" style="background:var(--blue);color:#000" onclick="send('UP')">SEND MANUAL UP</button>
-    <button class="btn" style="background:#fff;color:#000" onclick="send('DOWN')">SEND MANUAL DOWN</button>
+
+    <div class="selector">
+        <button id="pBtn">Target Pair</button>
+        <div class="options-list" id="pOpt"></div>
+    </div>
+    
+    <div class="selector">
+        <button id="tBtn">Target Time</button>
+        <div class="options-list" id="tOpt"></div>
+    </div>
+
+    <button class="btn" style="background:var(--blue); color:#000; margin-top:10px;" onclick="send('UP')">SEND CALL (UP)</button>
+    <button class="btn" style="background:#fff; color:#000;" onclick="send('DOWN')">SEND PUT (DOWN)</button>
 </div>
 
 <script>
+// (Firebase Config same as before)
 const firebaseConfig = {
     apiKey: "AIzaSyDrSYq8uRKuhuhNJbL5wcnuVfcjshvzGR8",
     authDomain: "reactions-maker-site.firebaseapp.com",
@@ -64,11 +186,13 @@ TIMES.forEach(t => {
     d.onclick = () => { selV = t.v; tB.innerText = t.l; tO.style.display='none'; };
     tO.appendChild(d);
 });
-pB.onclick = () => pO.style.display='block';
-tB.onclick = () => tO.style.display='block';
+
+pB.onclick = (e) => { e.stopPropagation(); pO.style.display = pO.style.display === 'block' ? 'none' : 'block'; tO.style.display='none'; };
+tB.onclick = (e) => { e.stopPropagation(); tO.style.display = tO.style.display === 'block' ? 'none' : 'block'; pO.style.display='none'; };
+window.onclick = () => { pO.style.display='none'; tO.style.display='none'; };
 
 function setAuto(s) { db.ref('settings/autoMode').set(s); }
-db.ref('settings/autoMode').on('value', snap => { document.getElementById('status').innerText = "Auto Mode: " + (snap.val() ? "ON" : "OFF"); });
+db.ref('settings/autoMode').on('value', snap => { document.getElementById('status').innerText = "AUTO MODE: " + (snap.val() ? "🟢 ON" : "🔴 OFF"); });
 
 function send(dir) {
     const path = "data/" + selP.replace(/[^a-zA-Z0-9]/g,"") + "_" + selV;
@@ -89,7 +213,6 @@ setInterval(() => {
                 ref.once('value').then(s => {
                     let d = s.val();
                     if(!d || (Date.now()-d.start)/1000 >= d.duration) {
-                        // True randomness for each pair/time
                         let dir = (Math.random() + pi + ti) % 1 > 0.5 ? "UP" : "DOWN";
                         ref.set({dir:dir, start:Date.now(), duration:t.v, type:"auto", sid:Math.random()});
                     }
