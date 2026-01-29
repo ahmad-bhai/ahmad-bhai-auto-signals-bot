@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ADMIN CONTROL PANEL</title>
+  <link rel="shortcut icon" href="favicon.png" type="image/x-icon">
+   
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <style>
+        :root { --blue: #38bdf8; --bg: #0e121a; }
+        body{background:var(--bg);color:#fff;font-family:sans-serif;padding:20px;display:flex;justify-content:center}
+        .card{background:#1e293b;padding:25px;border-radius:20px;width:100%;max-width:400px;border:1px solid var(--blue)}
+        .selector{position:relative;margin-bottom:12px}
+        .selector button{width:100%;padding:14px;background:#0e121a;border:1px solid #334155;color:#fff;border-radius:10px;text-align:left;cursor:pointer;font-weight:bold}
+        .options-list{display:none;position:absolute;width:100%;background:#1e293b;border:1px solid var(--blue);border-radius:10px;z-index:100;max-height:250px;overflow-y:auto}
+        .options-list div{padding:12px;border-bottom:1px solid #334155;cursor:pointer}
+        .btn{width:100%;padding:14px;border:none;border-radius:10px;font-weight:bold;margin:8px 0;cursor:pointer}
+        #toast{visibility:hidden; min-width:250px; background-color:var(--blue); color:#000; text-align:center; border-radius:10px; padding:16px; position:fixed; z-index:1000; bottom:30px; font-weight:bold}
+        #toast.show{visibility:visible; animation:fadein 0.5s, fadeout 0.5s 2.5s}
+        @keyframes fadein{from{bottom:0;opacity:0} to{bottom:30px;opacity:1}}
+        @keyframes fadeout{from{bottom:30px;opacity:1} to{bottom:0;opacity:0}}
+    </style>
+</head>
+<body>
+<div id="toast">Manual Signal Sent!</div>
+<div class="card">
+    <h2 style="text-align:center;color:var(--blue)">ADMIN CONTROL</h2>
+    <div style="background:#0e121a;padding:15px;border-radius:15px;margin-bottom:20px;text-align:center;border:1px solid #334155">
+        <div id="status" style="margin-bottom:10px;font-weight:bold;color:var(--blue)">Auto Mode: LOADING...</div>
+        <button class="btn" style="background:#22c55e;color:white" onclick="setAuto(true)">START AUTO</button>
+        <button class="btn" style="background:#ef4444;color:white" onclick="setAuto(false)">STOP AUTO</button>
+    </div>
+    <div class="selector"><button id="pBtn">Target Pair</button><div class="options-list" id="pOpt"></div></div>
+    <div class="selector"><button id="tBtn">Target Time</button><div class="options-list" id="tOpt"></div></div>
+    <button class="btn" style="background:var(--blue);color:#000" onclick="send('UP')">SEND MANUAL UP</button>
+    <button class="btn" style="background:#fff;color:#000" onclick="send('DOWN')">SEND MANUAL DOWN</button>
+</div>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyDrSYq8uRKuhuhNJbL5wcnuVfcjshvzGR8",
+    authDomain: "reactions-maker-site.firebaseapp.com",
+    databaseURL: "https://reactions-maker-site-default-rtdb.firebaseio.com",
+    projectId: "reactions-maker-site"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const PAIRS = ["USD/PKR(OTC)","USD/ARS(OTC)","USD/CAD(OTC)","USD/DZD(OTC)","USD/NZD(OTC)","NZD/CAD(OTC)","USD/BDT(OTC)","USD/MXN(OTC)","USD/TRY(OTC)","NZD/JPY(OTC)","Solana(OTC)","Celestia(OTC)","TRON(OTC)","Trump(OTC)","Gold(OTC)","Silver(OTC)","UScrude(OTC)","UKBrent(OTC)","Johnson & Johnson(OTC)","Intel(OTC)","FACEBOOK INC(OTC)","Pfizer Inc(OTC)","Microsoft(OTC)","American Express(OTC)","Boeing Company(OTC)","McDonald's(OTC)","Pepe(OTC)"];
+const TIMES = [{l:'5 sec',v:5},{l:'10 sec',v:10},{l:'15 sec',v:15},{l:'30 sec',v:30},{l:'1 mint',v:60},{l:'2 mint',v:120},{l:'5 mint',v:300},{l:'10 mint',v:600}];
+
+let selP = PAIRS[0], selV = 60;
+const pB = document.getElementById('pBtn'), pO = document.getElementById('pOpt');
+const tB = document.getElementById('tBtn'), tO = document.getElementById('tOpt');
+
+PAIRS.forEach(p => {
+    let d = document.createElement('div'); d.innerText = p;
+    d.onclick = () => { selP = p; pB.innerText = p; pO.style.display='none'; };
+    pO.appendChild(d);
+});
+TIMES.forEach(t => {
+    let d = document.createElement('div'); d.innerText = t.l;
+    d.onclick = () => { selV = t.v; tB.innerText = t.l; tO.style.display='none'; };
+    tO.appendChild(d);
+});
+pB.onclick = () => pO.style.display='block';
+tB.onclick = () => tO.style.display='block';
+
+function setAuto(s) { db.ref('settings/autoMode').set(s); }
+db.ref('settings/autoMode').on('value', snap => { document.getElementById('status').innerText = "Auto Mode: " + (snap.val() ? "ON" : "OFF"); });
+
+function send(dir) {
+    const path = "data/" + selP.replace(/[^a-zA-Z0-9]/g,"") + "_" + selV;
+    db.ref(path).set({dir:dir, start:Date.now(), duration:selV, type:"manual", sid:Math.random()}).then(() => {
+        let t = document.getElementById("toast"); t.className = "show";
+        setTimeout(() => { t.className = t.className.replace("show", ""); }, 3000);
+    });
+}
+
+// THE IMPROVED ENGINE
+setInterval(() => {
+    db.ref('settings/autoMode').once('value').then(snap => {
+        if(!snap.val()) return;
+        PAIRS.forEach((p, pi) => {
+            TIMES.forEach((t, ti) => {
+                const path = "data/" + p.replace(/[^a-zA-Z0-9]/g,"") + "_" + t.v;
+                let ref = db.ref(path);
+                ref.once('value').then(s => {
+                    let d = s.val();
+                    if(!d || (Date.now()-d.start)/1000 >= d.duration) {
+                        // True randomness for each pair/time
+                        let dir = (Math.random() + pi + ti) % 1 > 0.5 ? "UP" : "DOWN";
+                        ref.set({dir:dir, start:Date.now(), duration:t.v, type:"auto", sid:Math.random()});
+                    }
+                });
+            });
+        });
+    });
+}, 4000);
+</script>
+</body>
+</html>
